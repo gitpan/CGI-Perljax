@@ -6,7 +6,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
 
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .1;
+    $VERSION     = .14;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -26,7 +26,6 @@ web applications.
 
   use CGI::Perljax;
   my $pjx = new CGI::Perljax( 'exported_func1' => \&perl_func1 );
-
 
 =head1 DESCRIPTION
 
