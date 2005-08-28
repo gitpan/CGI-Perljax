@@ -57,85 +57,111 @@ that you hand it a CGI.pm object, and that the subroutines to be
 exported to javascript are declared
 prior to creating the Perljax object, like so:
 
-# start us out with the usual suspects
-use strict;
-use Perljax;
-use CGI;
+  # start us out with the usual suspects
+  use strict;
+  use Perljax;
+  use CGI;
 
-# define an anonymous perl subroutine that you want available to
-# javascript on the generated web page.
+  # define an anonymous perl subroutine that you want available to
+  # javascript on the generated web page.
 
-my $evenodd_func = sub {
-  my $input = shift;
-  
-  # see if input is defined
-  if ( not defined $input ) {
-    return("input not defined or NaN");
-  }
+  my $evenodd_func = sub {
+    my $input = shift;
+    
+    # see if input is defined
+    if ( not defined $input ) {
+      return("input not defined or NaN");
+    }
 
-  # see if value is a number (*thanks Randall!*)
-  if ( $input !~ /\A\d+\z/ ) {
-    return("input is NaN");
-  }
+    # see if value is a number (*thanks Randall!*)
+    if ( $input !~ /\A\d+\z/ ) {
+      return("input is NaN");
+    }
 
-  # got a number, so mod by 2
-  $input % 2 == 0 ? return("EVEN") : return("ODD");
+    # got a number, so mod by 2
+    $input % 2 == 0 ? return("EVEN") : return("ODD");
 
-}; # don't forget the trailing ';', since this is an anon subroutine
+  }; # don't forget the trailing ';', since this is an anon subroutine
 
-# define a function to generate the web page - this can be done
-# million different ways, and can also be defined as an anonymous sub.
-# The only requirement is that the sub send back the html of the page.
-sub Show_HTML {
-  my $html = "";
-  $html .= <<EOT;
+  # define a function to generate the web page - this can be done
+  # million different ways, and can also be defined as an anonymous sub.
+  # The only requirement is that the sub send back the html of the page.
 
-<HTML>
-<HEAD><title>Perljax Example</title>
-</HEAD>
-<BODY>
-  Enter a number:&nbsp;
-  <input type="text" name="val1" id="val1" size="6"
-     onkeyup="evenodd( ['val1'], 'resultdiv' ); retu
-rn true;"><br>
+  sub Show_HTML {
+    my $html = <<EOT;
+
+  <HTML>
+  <HEAD><title>Perljax Example</title>
+  </HEAD>
+  <BODY>
+    Enter a number:&nbsp;
+    <input type="text" name="val1" id="val1" size="6"
+       onkeyup="evenodd( ['val1'], 'resultdiv' );
+       return true;"><br>
     <hr>
     <div id="resultdiv" style="border: 1px solid black;
           width: 440px; height: 80px; overflow: auto">
     </div>
-</BODY>
-</HTML>
-EOT
+  </BODY>
+  </HTML>
+  EOT
 
-  return $html;
-}
+    return $html;
+  }
 
-my $cgi = new CGI();  # create a new CGI object
-# now we create a Perljax object, and associate our anon code
-my $pjx = new Perljax( 'evenodd' => $evenodd_func );
+  my $cgi = new CGI();  # create a new CGI object
+  # now we create a Perljax object, and associate our anon code
+  my $pjx = new Perljax( 'evenodd' => $evenodd_func );
 
-# now print the page.  This can be done easily using
-# Perljax->build_html, sending in the CGI object to generate the html
-# header.  This could also be done manually, and then you don't need
-# the build_html() method
-print $pjx->build_html($q,\&Show_Form); # this outputs the html for the page
+  # now print the page.  This can be done easily using
+  # Perljax->build_html, sending in the CGI object to generate the html
+  # header.  This could also be done manually, and then you don't need
+  # the build_html() method
+  
+  # this outputs the html for the page
+  print $pjx->build_html($q,\&Show_Form);
 
-# that's it!
+  # that's it!
 
-=head1 INTERFACE
+=head1 METHODS
 
-=head2 new()
+=item build_html()
 
-=head2 build_html()
+    Purpose: associate cgi obj ($q) with pjx object, insert
+		         javascript into <HEAD></HEAD> element
+  Arguments: either a coderef, or a string containing html
+    Returns: html or updated html (including the header)
+  Called By: originating cgi script
 
-=head2 show_javascript()
+=cut
+
+=item show_javascript()
+
+    Purpose: builds the text of all the javascript that needs to be
+             inserted into the calling scripts html header
+  Arguments: 
+    Returns: javascript text
+  Called By: originating web script
+
+=cut
+
+=item show_common_js()
+
+    Purpose: create text of the javascript needed to interface with
+             the perl functions
+  Arguments: none
+    Returns: text of common javascript subroutine, 'do_http_request'
+  Called By: originating cgi script, or build_html()
+
+=cut
 
 =head1 BUGS
 
-
-
 =head1 SUPPORT
 
-
+Check out the sourceforge discussion lists at:
+  
+  http://www.souceforge.net/pjax
 
 =head1 AUTHORS
 
@@ -164,15 +190,15 @@ Class::Accessor, CGI
 ######################################################
 
 
-=item build_html()
-
-    Purpose: associate cgi obj ($q) with pjx object, insert
-		         javascript into <HEAD></HEAD> element
-  Arguments: either a coderef, or a string containing html
-    Returns: html or updated html (including the header)
-  Called By: originating cgi script
-
-=cut
+#=item build_html()
+#
+#    Purpose: associate cgi obj ($q) with pjx object, insert
+#		         javascript into <HEAD></HEAD> element
+#  Arguments: either a coderef, or a string containing html
+#    Returns: html or updated html (including the header)
+#  Called By: originating cgi script
+#
+#=cut
 
 sub build_html {
   my ($self,$q,$html_source) = @_;
@@ -213,15 +239,15 @@ sub build_html {
 	return $self->html();
 }
 
-=item show_javascript()
-
-    Purpose: builds the text of all the javascript that needs to be
-             inserted into the calling scripts html header
-  Arguments: 
-    Returns: javascript text
-  Called By: originating web script
-
-=cut
+#=item show_javascript()
+#
+#    Purpose: builds the text of all the javascript that needs to be
+#             inserted into the calling scripts html header
+#  Arguments: 
+#    Returns: javascript text
+#  Called By: originating web script
+#
+#=cut
 
 sub show_javascript {
   my ($self) = @_;
@@ -259,21 +285,20 @@ sub new {
       $self->coderef_list()->{ $function_name } = $code;
     }
     return ($self);
-}
-
+} 
 ######################################################
 ## METHODS - private                                ##
 ######################################################
 
-=item show_common_js()
-
-    Purpose: create text of the javascript needed to interface with
-             the perl functions
-  Arguments: none
-    Returns: text of common javascript subroutine, 'do_http_request'
-  Called By: originating cgi script, or build_html()
-
-=cut
+#=item show_common_js()
+#
+#    Purpose: create text of the javascript needed to interface with
+#             the perl functions
+#  Arguments: none
+#    Returns: text of common javascript subroutine, 'do_http_request'
+#  Called By: originating cgi script, or build_html()
+#
+#=cut
 
 sub show_common_js {
   my $self = shift;
@@ -355,16 +380,16 @@ EOT
   return $rv;
 }
 
-=item insert_js_in_head()
-
-    Purpose: searches the html value in the Perljax object and inserts
-             the ajax javascript code in the <script></script> section,
-             or if no such section exists, then it creates it.
-  Arguments: none
-    Returns: none
-  Called By: build_html()
-
-=cut
+#=item insert_js_in_head()
+#
+#    Purpose: searches the html value in the Perljax object and inserts
+#             the ajax javascript code in the <script></script> section,
+#             or if no such section exists, then it creates it.
+#  Arguments: none
+#    Returns: none
+#  Called By: build_html()
+#
+#=cut
 
 sub insert_js_in_head{
   my $self = shift;
@@ -387,18 +412,18 @@ sub insert_js_in_head{
 	return;
 }
 
-=item handle_request()
-
-    Purpose: makes sure a fname function name was set in the CGI
-             object, and then tries to eval the function with
-             parameters sent in on fnargs
-  Arguments: none
-    Returns: the result of the perl subroutine, as text; if multiple
-             arguments are sent back from the defined, exported perl
-             method, then join then with a connector (__pjx__).
-  Called By: build_html()
-
-=cut
+#=item handle_request()
+#
+#    Purpose: makes sure a fname function name was set in the CGI
+#             object, and then tries to eval the function with
+#             parameters sent in on fnargs
+#  Arguments: none
+#    Returns: the result of the perl subroutine, as text; if multiple
+#             arguments are sent back from the defined, exported perl
+#             method, then join then with a connector (__pjx__).
+#  Called By: build_html()
+#
+#=cut
 
 sub handle_request {
   my ($self) = shift;
@@ -449,17 +474,18 @@ sub handle_request {
 }
 
 
-=item make_function()
+#=item make_function()
+#
+#    Purpose: creates the javascript wrapper for the underlying perl
+#             subroutine
+#  Arguments: CGI object from web form, and the name of the perl
+#             function to export to javascript
+#    Returns: text of the javascript-wrapped perl subroutine
+#  Called By: show_javascript; called once for each registered perl
+#             subroutine
+#
+#=cut
 
-    Purpose: creates the javascript wrapper for the underlying perl
-             subroutine
-  Arguments: CGI object from web form, and the name of the perl
-             function to export to javascript
-    Returns: text of the javascript-wrapped perl subroutine
-  Called By: show_javascript; called once for each registered perl
-             subroutine
-
-=cut
 sub make_function {
   my ($self, $func_name ) = @_;
   return("") if not defined $func_name;
@@ -488,14 +514,14 @@ EOT
  return $rv;
 }
 
-=item Subroutine: register()
-
-    Purpose: adds a function name and a code ref to the global coderef hash
-  Arguments: function name, code reference
-    Returns: none
-  Called By: originating web script
-
-=cut
+#=item Subroutine: register()
+#
+#    Purpose: adds a function name and a code ref to the global coderef hash
+#  Arguments: function name, code reference
+#    Returns: none
+#  Called By: originating web script
+#
+#=cut
 
 sub register {
   my ( $self, $fn, $coderef ) = @_;
