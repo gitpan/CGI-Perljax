@@ -161,7 +161,7 @@ prior to creating the Perljax object, like so:
 
 Check out the sourceforge discussion lists at:
   
-  http://www.souceforge.net/pjax
+  http://www.soucreforge.net/pjax
 
 =head1 AUTHORS
 
