@@ -47,15 +47,15 @@ dynamically updated.
 
 Other than using the Class::Accessor module to generate Perljaxs'
 accessor methods, Perljax is completely self-contained - it does
-not require you to install a larger packacge or a full Content
+not require you to install a larger package or a full Content
 Management System.
 
 =head1 USAGE
 
-First, you create a cgi script:  the only requirements for Perljax are
-that you hand it a CGI.pm object, and that the subroutines to be
-exported to javascript are declared
-prior to creating the Perljax object, like so:
+First, you create a cgi script:  the only requirements for Perljax
+are that you hand it a CGI.pm object, and that the subroutines
+to be exported to javascript are declared prior to creating the
+Perljax object, like so:
 
   # start us out with the usual suspects
   use strict;
