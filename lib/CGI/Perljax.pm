@@ -29,7 +29,7 @@ web applications.
 
 =head1 DESCRIPTION
 
-Perljax s an object-oriented module that provides a unique mechanism
+Perljax is an object-oriented module that provides a unique mechanism
 for using perl code asynchronously from javascript-enhanced
 web pages.  You woul commonly use Perljax in AJAX/DHTML-based web
 applications.  Perljax unburdens the user from having to write any
