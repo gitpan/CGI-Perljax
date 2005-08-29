@@ -161,7 +161,7 @@ Perljax object, like so:
 
 Check out the sourceforge discussion lists at:
   
-  http://www.sourceforge.net/pjax
+  http://www.sourceforge.net/projects/pjax
 
 =head1 AUTHORS
 
