@@ -10,5 +10,7 @@ WriteMakefile(
     ABSTRACT     => 'CGI::Perljax',
     PREREQ_PM    => {
                      'Test::Simple' => 0.44,
+                     'Class::Accessor' => 0,
+                     'CGI' => 0
                     },
 );
