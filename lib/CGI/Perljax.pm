@@ -31,7 +31,7 @@ web applications.
 
 Perljax is an object-oriented module that provides a unique mechanism
 for using perl code asynchronously from javascript-enhanced
-web pages.  You woul commonly use Perljax in AJAX/DHTML-based web
+web pages.  You would commonly use Perljax in AJAX/DHTML-based web
 applications.  Perljax unburdens the user from having to write any
 javascript, except for having to associate an exported method with
 a document-defined event (such as onClick, onKeyUp, etc). Only in
@@ -59,7 +59,7 @@ Perljax object, like so:
 
   # start us out with the usual suspects
   use strict;
-  use Perljax;
+  use CGI::Perljax;
   use CGI;
 
   # define an anonymous perl subroutine that you want available to
