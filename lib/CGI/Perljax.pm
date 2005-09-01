@@ -3,7 +3,6 @@ use strict;
 use base qw(Class::Accessor);
 use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
-
 BEGIN {
     use vars qw ($VERSION @ISA);
     $VERSION     = .15;
@@ -111,7 +110,7 @@ Perljax object, like so:
 
   my $cgi = new CGI();  # create a new CGI object
   # now we create a Perljax object, and associate our anon code
-  my $pjx = new Perljax( 'evenodd' => $evenodd_func );
+  my $pjx = new CGI::Perljax( 'evenodd' => $evenodd_func );
 
   # now print the page.  This can be done easily using
   # Perljax->build_html, sending in the CGI object to generate the html
@@ -119,7 +118,7 @@ Perljax object, like so:
   # the build_html() method
   
   # this outputs the html for the page
-  print $pjx->build_html($q,\&Show_Form);
+  print $pjx->build_html($cgi,\&Show_Form);
 
   # that's it!
 
@@ -127,7 +126,7 @@ Perljax object, like so:
 
 =item build_html()
 
-    Purpose: associate cgi obj ($q) with pjx object, insert
+    Purpose: associate cgi obj ($cgi) with pjx object, insert
 		         javascript into <HEAD></HEAD> element
   Arguments: either a coderef, or a string containing html
     Returns: html or updated html (including the header)
@@ -257,6 +256,8 @@ sub show_javascript {
   foreach my $func ( keys %{ $self->coderef_list() } ) {
     $rv .= $self->make_function( $func );
   }
+	$rv = "\n".'//<![CDATA['."\n".$rv."\n".'//]]>'."\n";
+	$rv = '<script type="text/javascript">'.$rv.'</script>';
   return $rv;
 }
 
@@ -375,7 +376,6 @@ function ghr() {
   }
   return null;
 }
-
 EOT
   return $rv;
 }
@@ -404,9 +404,9 @@ sub insert_js_in_head{
 	}
   @shtml= $mhtml =~ /(.*)(<\s*\/\s*head\s*>)(.*)/is;
 	if(@shtml){
-    $newhtml = $shtml[0]."<script>".$js."</script>".$shtml[1].$shtml[2];
+    $newhtml = $shtml[0].$js.$shtml[1].$shtml[2];
 	} elsif( @shtml= $mhtml =~ /(.*)(<\s*html.*?>)(.*)/is){
-    $newhtml = $shtml[0].$shtml[1]."<script>".$js."</script>".$shtml[2];
+    $newhtml = $shtml[0].$shtml[1].$js.$shtml[2];
 	}
 	$self->html($newhtml);
 	return;
@@ -494,7 +494,6 @@ sub make_function {
   my $jsdebug = $self->JSDEBUG();
   #create the javascript text
   $rv .= <<EOT;
-
 function $func_name() {
   var args = $func_name.arguments;
   for( i=0; i<args[0].length;i++ ) {
@@ -508,7 +507,6 @@ function $func_name() {
 	  document.getElementById('__pjxrequest').innerHTML = tmp;
 	}
 }
-
 EOT
 
  return $rv;
