@@ -5,12 +5,9 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .15;
+    $VERSION     = .16;
     @ISA         = qw(Class::Accessor);
 }
-
-#create our object's accessor functions
-#Perljax->mk_accessors(qw(coderef_list cgi html DEBUG JSDEBUG));
 
 ########################################### main pod documentation begin ##
 # Below is the stub of documentation for your module. You better edit it!
@@ -113,12 +110,14 @@ Perljax object, like so:
   my $pjx = new CGI::Perljax( 'evenodd' => $evenodd_func );
 
   # now print the page.  This can be done easily using
-  # Perljax->build_html, sending in the CGI object to generate the html
+  # the build_html() method, sending in the CGI object to generate the html
   # header.  This could also be done manually, and then you don't need
-  # the build_html() method
+  # the build_html() method.  To do it manually, you are responsible
+  # for sending in the html header line (i.e. "Content-Type: text/html")
+  #
   
   # this outputs the html for the page
-  print $pjx->build_html($cgi,\&Show_Form);
+  print $pjx->build_html($cgi,\&Show_HTML);
 
   # that's it!
 
@@ -141,16 +140,9 @@ Perljax object, like so:
   Arguments: 
     Returns: javascript text
   Called By: originating web script
-
-=cut
-
-=item show_common_js()
-
-    Purpose: create text of the javascript needed to interface with
-             the perl functions
-  Arguments: none
-    Returns: text of common javascript subroutine, 'do_http_request'
-  Called By: originating cgi script, or build_html()
+       Note: This method is also overridden so when you just print
+             a Perljax object it will output all the javascript needed
+             for the web page.
 
 =cut
 
