@@ -5,7 +5,7 @@ use overload '""' => 'show_javascript'; # for building web pages, so
                                         # you can just say: print $pjx
 BEGIN {
     use vars qw ($VERSION @ISA);
-    $VERSION     = .16;
+    $VERSION     = .20;
     @ISA         = qw(Class::Accessor);
 }
 
@@ -35,33 +35,37 @@ the more advanced implementations of a exported perl method would
 a user need to write any javascript.
 
 Perljax supports methods that return single results, or multiple
-results to the web page.
+results to the web page, and the after version >= 0.20, supports
+returning values to multiple DIV elements on the HTML page.
 
 Using Perljax, the URL for the HTTP GET request is automatically
 generated based on HTML layout and events, and the page is then
-dynamically updated.
+dynamically updated.  We also have support for mapping URL's to a
+CGI::Perljax function name, so you can separate your code processing
+over multiple scripts.
 
 Other than using the Class::Accessor module to generate Perljaxs'
 accessor methods, Perljax is completely self-contained - it does
 not require you to install a larger package or a full Content
 Management System.
 
+A primary goal of CGI::Perljax is to keep the module streamlined and
+maximally flexible.  We are trying to keep the generated javascript
+code to a minimum, and provide users with a variety of methods for
+deploying CGI::Perljax in their own applications.
+
 =head1 USAGE
 
-First, you create a cgi script:  the only requirements for Perljax
-are that you hand it a CGI.pm object, and that the subroutines
-to be exported to javascript are declared prior to creating the
-Perljax object, like so:
+Create a CGI object to send to Perljax, export the subroutines
+prior to creating the Perljax object, like so:
 
-  # start us out with the usual suspects
   use strict;
   use CGI::Perljax;
   use CGI;
 
-  # define an anonymous perl subroutine that you want available to
-  # javascript on the generated web page.
+  # define a normal perl subroutine that you want available 
 
-  my $evenodd_func = sub {
+    sub evenodd_func {
     my $input = shift;
     
     # see if input is defined
@@ -77,7 +81,7 @@ Perljax object, like so:
     # got a number, so mod by 2
     $input % 2 == 0 ? return("EVEN") : return("ODD");
 
-  }; # don't forget the trailing ';', since this is an anon subroutine
+  }
 
   # define a function to generate the web page - this can be done
   # million different ways, and can also be defined as an anonymous sub.
@@ -106,20 +110,17 @@ Perljax object, like so:
   }
 
   my $cgi = new CGI();  # create a new CGI object
-  # now we create a Perljax object, and associate our anon code
-  my $pjx = new CGI::Perljax( 'evenodd' => $evenodd_func );
 
-  # now print the page.  This can be done easily using
-  # the build_html() method, sending in the CGI object to generate the html
-  # header.  This could also be done manually, and then you don't need
-  # the build_html() method.  To do it manually, you are responsible
-  # for sending in the html header line (i.e. "Content-Type: text/html")
-  #
+  # create a Perljax object, and associate our anon code
+  # In >= version 0.20 of CGI::Perljax, you can make the associated
+  # code a url to another CGI script.
+
+  my $pjx = new CGI::Perljax( 'evenodd' => \&evenodd_func );
+
+	# print the form sending in the cgi and the HTML function
   
   # this outputs the html for the page
   print $pjx->build_html($cgi,\&Show_HTML);
-
-  # that's it!
 
 =head1 METHODS
 
@@ -192,25 +193,27 @@ Class::Accessor, CGI
 #=cut
 
 sub build_html {
-  my ($self,$q,$html_source) = @_;
+  my ( $self, $q, $html_source ) = @_;
   if ( $self->DEBUG() ) {
     print STDERR "html_source is ", $html_source, "\n";
   }
 
-	$self->cgi($q);  # associate the CGI object with this object
-  #check if "fname" was defined in the CGI object
-  if(defined $self->cgi()->param("fname")){
+  $self->cgi($q);    # associate the CGI object with this object
+                     #check if "fname" was defined in the CGI object
+  if ( defined $self->cgi()->param("fname") ) {
+
     # it was, so just return the html from the handled request
-    return($self->handle_request());
-	} else {
-    my $html = $self->cgi()->header(); # start with the minimum,
-                                       # a http header line
-  
+    return ( $self->handle_request() );
+  } else {
+    my $html = $self->cgi()->header();    # start with the minimum,
+                                          # a http header line
+
     # check if the user sent in a coderef for generating the html,
-    # or the actual html 
-    if( ref($html_source) eq "CODE"){
+    # or the actual html
+    if ( ref($html_source) eq "CODE" ) {
       eval { $html .= &$html_source };
       if ($@) {
+
         # there was a problem evaluating the html-generating function
         # that was sent in, so generate an error page
         $html = $self->cgi()->header();
@@ -219,21 +222,23 @@ sub build_html {
           object</body></html>!;
         return $html;
       }
-      $self->html($html); # no problems, so set html
+      $self->html($html);    # no problems, so set html
     } else {
+
       # user must have sent in raw html, so add it
-      $self->html($html . $html_source);
+      $self->html( $html . $html_source );
     }
+
     # now modify the html to insert the javascript
-    $self->insert_js_in_head(); 
+    $self->insert_js_in_head();
   }
-	return $self->html();
+  return $self->html();
 }
 
 #=item show_javascript()
 #
 #    Purpose: builds the text of all the javascript that needs to be
-#             inserted into the calling scripts html header
+#             inserted into the calling script's html header
 #  Arguments: 
 #    Returns: javascript text
 #  Called By: originating web script
@@ -242,43 +247,54 @@ sub build_html {
 
 sub show_javascript {
   my ($self) = @_;
-  my $rv = $self->show_common_js(); # first show the common js
-;
-  # now build the js for each perl function you want exported to js
-  foreach my $func ( keys %{ $self->coderef_list() } ) {
-    $rv .= $self->make_function( $func );
+  my $rv = $self->show_common_js();    # show the common js
+
+  # build the js for each perl function you want exported to js
+  foreach my $func ( keys %{ $self->coderef_list() }, keys %{ $self->url_list() } ) {
+    $rv .= $self->make_function($func);
   }
-	$rv = "\n".'//<![CDATA['."\n".$rv."\n".'//]]>'."\n";
-	$rv = '<script type="text/javascript">'.$rv.'</script>';
+  $rv = "\n" . '//<![CDATA[' . "\n" . $rv . "\n" . '//]]>' . "\n";
+  $rv = '<script type="text/javascript">' . $rv . '</script>';
   return $rv;
 }
 
 ## new
 sub new {
-    my ($class) = shift;
-    my $self = bless ({}, ref ($class) || $class);
-    $self->mk_accessors( qw(coderef_list cgi html DEBUG JSDEBUG) );
-		$self->JSDEBUG(0);
-		$self->DEBUG(0);
-    $self->{coderef_list} = {}; #accessorized
-		$self->{html}=undef;
-    $self->{cgi}= undef; #accessorized
+  my ($class) = shift;
+  my $self = bless ({}, ref ($class) || $class);
+  $self->mk_accessors( qw(url_list coderef_list cgi html DEBUG JSDEBUG) );
+  $self->JSDEBUG(0);
+  $self->DEBUG(0);
+  $self->{coderef_list} = {}; #accessorized
+  $self->{url_list} = {}; #accessorized
+  $self->{html}=undef;
+  $self->{cgi}= undef; #accessorized
 
-    if ( @_ < 2 ) {
-      die "incorrect usage: must have fn=>code pairs in new\n";
-    }
+  if ( @_ < 2 ) {
+    die "incorrect usage: must have fn=>code pairs in new\n";
+  }
 
-    while ( @_ ) {
-      my($function_name,$code) = splice( @_, 0, 2 );
-
+  while ( @_ ) {
+    my($function_name,$code) = splice( @_, 0, 2 );
+    if ( ref( $code ) eq "CODE" ) {
       if ( $self->DEBUG() ) {
         print STDERR "name = $function_name, code = $code\n";
       }
       # add the name/code to hash
       $self->coderef_list()->{ $function_name } = $code;
+    } elsif ( ref($code) ) {
+      die "Unsuported code block/url\n";
+    } else {
+      if ( $self->DEBUG() ) {
+        print STDERR "Setting function $function_name to url $code\n";
+      }
+			# if it's a url, it is added here 
+      $self->url_list()->{ $function_name } = $code;
     }
-    return ($self);
+  }
+  return ($self);
 } 
+
 ######################################################
 ## METHODS - private                                ##
 ######################################################
@@ -295,7 +311,6 @@ sub new {
 
 sub show_common_js {
   my $self = shift;
-
   my $rv = <<EOT;
 function pjx(args,fname){
   this.dt=args[1];
@@ -329,32 +344,37 @@ pjx.prototype.perl_do=function() {
   r = this.req;
   dt=this.dt;
   url=this.url;
-//  document.getElementById('x').innerHTML = url;
   r.open("GET",url,true);
-  r.onreadystatechange= function() {
-    if ( r.readyState!= 4) { return; }
-    var data = r.responseText;
-    if (typeof(dt)=='string') {
-      var div = document.getElementById(dt);
-      if (div.type=='text') {
-        div.value=data;
-      } else {
-        div.innerHTML = data;
-      }
-    } else if (typeof(dt)=='function') {
-      dt(data.split('__pjx__'));
-    }
-  } // end handler
+  r.onreadystatechange=handleReturn;
   r.send(null);
 }
 
+handleReturn =	function() {
+	if ( r.readyState!= 4) { return; }
+	var data = r.responseText.split(/__pjx__/);
+	if(dt.constructor != Array){dt=[dt];}
+	if(data.constructor != Array){data=[data];}
+	if (typeof(dt[0])!='function') {
+    for(var i=0;i<dt.length;i++){ 		
+			var div = document.getElementById(dt[i]);
+			if (div.type=='text') {
+				div.value=data[i];
+			} else {
+				div.innerHTML = data[i];
+			}
+		}
+	} else if (typeof(dt[0])=='function') {
+			eval(dt[0](data));
+	}
+} 
+
+
 pjx.prototype.getURL=function(fname){
   args = this.args;
-  url= window.location +'?fname=' + fname;
+  url= '?fname=' + fname;
   for(i=0;i<args.length;i++){
     url=url + '&fnargs=' + escape(args[i]);
   }
-  url = url.replace(/[+]/g,'%2B');
   return url;
 }
 
@@ -471,7 +491,8 @@ sub handle_request {
 #    Purpose: creates the javascript wrapper for the underlying perl
 #             subroutine
 #  Arguments: CGI object from web form, and the name of the perl
-#             function to export to javascript
+#             function to export to javascript, or a url if the
+#             function name refers to another cgi script
 #    Returns: text of the javascript-wrapped perl subroutine
 #  Called By: show_javascript; called once for each registered perl
 #             subroutine
@@ -483,7 +504,10 @@ sub make_function {
   return("") if not defined $func_name;
   return("") if $func_name eq "";
   my $rv = "";
+	my $outside_url = $self->url_list()->{$func_name};
+	if(not defined $outside_url){$outside_url = 0;}
   my $jsdebug = $self->JSDEBUG();
+
   #create the javascript text
   $rv .= <<EOT;
 function $func_name() {
@@ -492,14 +516,21 @@ function $func_name() {
     args[0][i] = getElem(args[0][i]);
   }
   var pjx_obj = new pjx(args,"$func_name");
-  var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + pjx_obj.url +
-	' </a>';
+	if ( \'$outside_url\' == '0') {
+	  pjx_obj.url = window.location + pjx_obj.url;
+	} else {
+	  pjx_obj.url = \'$outside_url\' + pjx_obj.url;
+	}
+	
+  var tmp = '<a href= '+ pjx_obj.url +' target=_blank>' + pjx_obj.url + ' </a>';
   pjx_obj.perl_do();
-	if($jsdebug){
+	if ($jsdebug) {
 	  document.getElementById('__pjxrequest').innerHTML = tmp;
 	}
 }
 EOT
+# make sure 'EOT' is at the left margin if you copy and paste
+# this code. 
 
  return $rv;
 }
@@ -516,8 +547,14 @@ EOT
 sub register {
   my ( $self, $fn, $coderef ) = @_;
   # coderef_list() is a Class::Accessor function
-  $self->coderef_list()->{$fn} = $coderef;
+  # url_list() is a Class::Accessor function
+  if ( ref( $coderef ) eq "CODE" ) {
+    $self->coderef_list()->{$fn} = $coderef;
+  } elsif ( ref($coderef) ) {
+    die "Unsupported code/url type - error\n";
+  } else {
+    $self->url_list()->{$fn} = $coderef;
+  }
 }
-
 1;
 __END__
